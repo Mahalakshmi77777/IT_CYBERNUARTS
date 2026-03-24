@@ -1,0 +1,43 @@
+name: college_club_app
+description: "IT CLUB — College Club Event Management App"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Firebase
+  firebase_core: any
+  firebase_auth: any
+  cloud_firestore: any
+  firebase_storage: any
+  firebase_messaging: any
+
+  # State Management
+  flutter_riverpod: any
+
+  # Navigation
+  go_router: any
+
+  # UI & Utilities
+  intl: any
+  image_picker: any
+  cached_network_image: any
+  google_fonts: any
+  flutter_local_notifications: any
+  shimmer: any
+  uuid: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
