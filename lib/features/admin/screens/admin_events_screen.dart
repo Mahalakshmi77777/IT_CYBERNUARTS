@@ -26,6 +26,7 @@ class _AdminEventsScreenState extends ConsumerState<AdminEventsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Events')),
       floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: () => context.go('/admin/create-event'),
         child: const Icon(Icons.add),
       ),

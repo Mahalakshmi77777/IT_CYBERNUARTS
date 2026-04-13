@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
+import 'dart:async';
 
 /// Data model for a club.
 class Club {
@@ -37,14 +38,29 @@ class Club {
       };
 }
 
+final StreamController<List<Club>> _mockClubsController = StreamController<List<Club>>.broadcast();
+
+final List<Club> _localMockClubs = [
+  Club(id: 'c1', name: 'CyberNerds', description: 'Tech Club focused on web apps and security.', createdAt: DateTime.now()),
+  Club(id: 'c2', name: 'Artistry', description: 'Cultural Club for arts and dance.', createdAt: DateTime.now()),
+  Club(id: 'c3', name: 'SportsHub', description: 'Sports Club promoting fitness.', createdAt: DateTime.now()),
+];
+
+
 /// Repository for club CRUD operations.
 class ClubRepository {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  final bool useMock = true;
 
   CollectionReference get _clubsRef => _db.collection('clubs');
 
   Future<void> createClub(Club club) async {
+    if (useMock) {
+      _localMockClubs.add(club);
+      _mockClubsController.add(_localMockClubs.toList());
+      return;
+    }
     await _clubsRef.doc(club.id).set(club.toMap());
   }
 
@@ -64,18 +80,24 @@ class ClubRepository {
   }
 
   Stream<List<Club>> getClubs() {
-    return _clubsRef
-        .orderBy('name')
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => Club.fromFirestore(d)).toList());
+    if (useMock) {
+      return Stream.value(_localMockClubs.toList());
+    } else {
+      return _clubsRef
+          .orderBy('name')
+          .snapshots()
+          .map((snap) => snap.docs.map((d) => Club.fromFirestore(d)).toList());
+    }
   }
 
   Future<Club> getClub(String clubId) async {
+    if (useMock) return _localMockClubs.firstWhere((c) => c.id == clubId);
     final doc = await _clubsRef.doc(clubId).get();
     return Club.fromFirestore(doc);
   }
 
   Future<String> uploadLogo(String clubId, File file) async {
+    if (useMock) return 'https://via.placeholder.com/150';
     final ref = _storage.ref('club_logos/$clubId');
     await ref.putFile(file);
     return ref.getDownloadURL();

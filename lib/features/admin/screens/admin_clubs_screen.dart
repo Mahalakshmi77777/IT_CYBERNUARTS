@@ -13,6 +13,7 @@ class AdminClubsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Clubs')),
       floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: () => context.go('/admin/clubs/create'),
         child: const Icon(Icons.add),
       ),

@@ -46,16 +46,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isSplash) {
         if (!isLoggedIn) return '/login';
         if (hardcodedUser != null) {
-          return hardcodedUser.isAdmin ? '/admin' : '/user';
+          return hardcodedUser.isAdmin ? '/admin' : '/user/events';
         }
-        return userRole == 'admin' ? '/admin' : '/user';
+        return userRole == 'admin' ? '/admin' : '/user/events';
       }
 
       if (isLoggedIn && isLoginOrRegister) {
         if (hardcodedUser != null) {
-          return hardcodedUser.isAdmin ? '/admin' : '/user';
+          return hardcodedUser.isAdmin ? '/admin' : '/user/events';
         }
-        return userRole == 'admin' ? '/admin' : '/user';
+        return userRole == 'admin' ? '/admin' : '/user/events';
       }
 
       if (!isLoggedIn && !isLoginOrRegister) {
@@ -149,14 +149,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(
             navigatorKey: _userShellKey,
-            routes: [
-              GoRoute(
-                path: '/user',
-                builder: (_, __) => const HomeScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/user/events',

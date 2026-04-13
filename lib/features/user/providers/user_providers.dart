@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/user_repository.dart';
 import '../data/registration_repository.dart';
 import '../../admin/data/event_repository.dart';
-import '../../../core/mock_data.dart'; // MOCK DATA IMPORT
+import '../../admin/providers/admin_providers.dart';
 
 /// Singleton user repository provider.
 final userRepositoryProvider = Provider<UserRepository>((ref) {
@@ -17,6 +17,7 @@ final registrationRepositoryProvider = Provider<RegistrationRepository>((ref) {
 /// Stream of user's registered events.
 final userRegistrationsProvider =
     StreamProvider.family<List<Event>, String>((ref, userId) {
-  // Return some mock events for 'My Events' mapping
-  return Stream.value([mockEvents.first, mockEvents.last]);
+  final allEvents = ref.watch(eventsStreamProvider).value ?? [];
+  if (allEvents.isEmpty) return Stream.value([]);
+  return Stream.value([allEvents.first]);
 });
