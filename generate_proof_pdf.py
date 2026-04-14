@@ -80,7 +80,7 @@ story.append(HRFlowable(width="60%", thickness=3, color=MUTED_MUSTARD, spaceAfte
 meta_data = [
     ['Developer', 'Mahalakshmi & Team'],
     ['Date of Deployment', '14 April 2026'],
-    ['Version', 'v1.0.0'],
+    ['Version', 'v1.0.1'],
     ['Package Name', 'com.itclub.college_club_app'],
 ]
 meta_table = Table(meta_data, colWidths=[2*inch, 4*inch])
@@ -132,7 +132,7 @@ summary_data = [
     ['APK Size', '54.9 MB'],
     ['Release Date', '14 April 2026, 10:50 AM IST'],
     ['Deployment Method', 'GitHub Releases (Free)'],
-    ['Download URL', 'github.com/Mahalakshmi77777/IT_CYBERNUARTS/releases/tag/v1.0.0'],
+    ['Download URL', 'github.com/Mahalakshmi77777/IT_CYBERNUARTS/releases/tag/v1.0.1'],
 ]
 story.append(make_table(summary_data))
 story.append(Spacer(1, 8))

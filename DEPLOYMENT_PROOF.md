@@ -3,7 +3,7 @@
 **Project Name:** IT CLUB (Cyber Nauts)  
 **Developer:** Mahalakshmi & Team  
 **Date of Deployment:** 14 April 2026  
-**Version:** v1.0.0  
+**Version:** v1.0.1  
 
 ---
 
@@ -14,11 +14,11 @@
 | **Application Name** | IT CLUB (Cyber Nauts) |
 | **Platform** | Android (Flutter) |
 | **Package Name** | `com.itclub.college_club_app` |
-| **Version** | v1.0.0 |
+| **Version** | v1.0.1 |
 | **APK Size** | 54.9 MB |
 | **Release Date** | 14 April 2026, 10:50 AM IST |
 | **Deployment Method** | GitHub Releases |
-| **Download URL** | [https://github.com/Mahalakshmi77777/IT_CYBERNUARTS/releases/tag/v1.0.0](https://github.com/Mahalakshmi77777/IT_CYBERNUARTS/releases/tag/v1.0.0) |
+| **Download URL** | [https://github.com/Mahalakshmi77777/IT_CYBERNUARTS/releases/tag/v1.0.1](https://github.com/Mahalakshmi77777/IT_CYBERNUARTS/releases/tag/v1.0.1) |
 
 ---
 
@@ -114,7 +114,7 @@ e67fcf5 chore: Integrate Shorebird and update prototype configurations
 ## 7. Proof of Deployment
 
 ### GitHub Release URL (Live & Publicly Accessible)
-🔗 **[https://github.com/Mahalakshmi77777/IT_CYBERNUARTS/releases/tag/v1.0.0](https://github.com/Mahalakshmi77777/IT_CYBERNUARTS/releases/tag/v1.0.0)**
+🔗 **[https://github.com/Mahalakshmi77777/IT_CYBERNUARTS/releases/tag/v1.0.1](https://github.com/Mahalakshmi77777/IT_CYBERNUARTS/releases/tag/v1.0.1)**
 
 ### Screenshots Required (Take from your device/browser):
 1. **GitHub Release Page** — Open the URL above in a browser and screenshot it
