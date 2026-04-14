@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/custom_button.dart';
+import '../data/auth_repository.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -66,34 +68,60 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
+
+    final outgoingEmail = _emailController.text.trim();
+    final outgoingName = _nameController.text.trim();
+    log('[RegisterScreen] Submitting: email=$outgoingEmail, name=$outgoingName');
+
     try {
-      await ref.read(authRepositoryProvider).signUp(
-            email: _emailController.text,
+      final user = await ref.read(authRepositoryProvider).signUp(
+            email: outgoingEmail,
             password: _passwordController.text,
-            name: _nameController.text,
-            college: _collegeController.text,
-            department: _departmentController.text,
+            name: outgoingName,
+            college: _collegeController.text.trim(),
+            department: _departmentController.text.trim(),
           );
-      // GoRouter redirect handles navigation
-    } catch (e) {
+
+      log('[RegisterScreen] ✅ Registration successful: ${user.email} (${user.role})');
+
+      // Clear all fields
+      _nameController.clear();
+      _emailController.clear();
+      _passwordController.clear();
+      _confirmPasswordController.clear();
+      _collegeController.clear();
+      _departmentController.clear();
+
+      // Refresh auth state — GoRouter redirect handles navigation
+      ref.invalidate(currentUserProvider);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_parseError(e))),
+          SnackBar(
+            content: const Text('Account created successfully! 🎉'),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+      }
+
+    } on ApiError catch (e) {
+      log('[RegisterScreen] ApiError: ${e.statusCode} — ${e.message}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red.shade700),
+        );
+      }
+    } catch (e) {
+      log('[RegisterScreen] Unexpected: $e');
+      if (mounted) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $msg'), backgroundColor: Colors.red.shade700),
         );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  String _parseError(Object e) {
-    if (e.toString().contains('email-already-in-use')) {
-      return 'Email already registered';
-    }
-    if (e.toString().contains('weak-password')) {
-      return 'Password is too weak';
-    }
-    return 'Registration failed. Please try again.';
   }
 
   @override
@@ -112,155 +140,48 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // ── Logo ──
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 80, height: 80,
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Icon(Icons.person_add_rounded,
-                            size: 44, color: AppColors.primary),
+                        child: const Icon(Icons.person_add_rounded, size: 44, color: AppColors.primary),
                       ),
                       const SizedBox(height: 20),
-                      Text(
-                        'Create Account',
-                        style: GoogleFonts.poppins(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      Text('Create Account', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 4),
-                      Text(
-                        'Join IT CLUB today',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                      Text('Join IT CLUB today', style: GoogleFonts.poppins(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       const SizedBox(height: 32),
 
-                      // ── Name ──
+                      TextFormField(controller: _nameController, textCapitalization: TextCapitalization.words, validator: (v) => Validators.required(v, AppStrings.fullName), decoration: const InputDecoration(labelText: AppStrings.fullName, prefixIcon: Icon(Icons.person_outline))),
+                      const SizedBox(height: 14),
+                      TextFormField(controller: _collegeController, textCapitalization: TextCapitalization.words, validator: (v) => Validators.required(v, AppStrings.college), decoration: const InputDecoration(labelText: AppStrings.college, prefixIcon: Icon(Icons.school_outlined))),
+                      const SizedBox(height: 14),
+                      TextFormField(controller: _departmentController, textCapitalization: TextCapitalization.words, validator: (v) => Validators.required(v, AppStrings.department), decoration: const InputDecoration(labelText: AppStrings.department, prefixIcon: Icon(Icons.business_outlined))),
+                      const SizedBox(height: 14),
+                      TextFormField(controller: _emailController, keyboardType: TextInputType.emailAddress, validator: Validators.email, decoration: const InputDecoration(labelText: AppStrings.email, prefixIcon: Icon(Icons.email_outlined))),
+                      const SizedBox(height: 14),
                       TextFormField(
-                        controller: _nameController,
-                        textCapitalization: TextCapitalization.words,
-                        validator: (v) =>
-                            Validators.required(v, AppStrings.fullName),
-                        decoration: const InputDecoration(
-                          labelText: AppStrings.fullName,
-                          prefixIcon: Icon(Icons.person_outline),
+                        controller: _passwordController, obscureText: _obscurePassword, validator: Validators.password,
+                        decoration: InputDecoration(labelText: AppStrings.password, prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined), onPressed: () => setState(() => _obscurePassword = !_obscurePassword)),
                         ),
                       ),
                       const SizedBox(height: 14),
-
-                      // ── College ──
                       TextFormField(
-                        controller: _collegeController,
-                        textCapitalization: TextCapitalization.words,
-                        validator: (v) =>
-                            Validators.required(v, AppStrings.college),
-                        decoration: const InputDecoration(
-                          labelText: AppStrings.college,
-                          prefixIcon: Icon(Icons.school_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // ── Department ──
-                      TextFormField(
-                        controller: _departmentController,
-                        textCapitalization: TextCapitalization.words,
-                        validator: (v) =>
-                            Validators.required(v, AppStrings.department),
-                        decoration: const InputDecoration(
-                          labelText: AppStrings.department,
-                          prefixIcon: Icon(Icons.business_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // ── Email ──
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: Validators.email,
-                        decoration: const InputDecoration(
-                          labelText: AppStrings.email,
-                          prefixIcon: Icon(Icons.email_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // ── Password ──
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        validator: Validators.password,
-                        decoration: InputDecoration(
-                          labelText: AppStrings.password,
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(_obscurePassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined),
-                            onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // ── Confirm Password ──
-                      TextFormField(
-                        controller: _confirmPasswordController,
-                        obscureText: _obscureConfirm,
-                        validator: (v) => Validators.confirmPassword(
-                            v, _passwordController.text),
-                        decoration: InputDecoration(
-                          labelText: AppStrings.confirmPassword,
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(_obscureConfirm
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined),
-                            onPressed: () => setState(
-                                () => _obscureConfirm = !_obscureConfirm),
-                          ),
+                        controller: _confirmPasswordController, obscureText: _obscureConfirm, validator: (v) => Validators.confirmPassword(v, _passwordController.text),
+                        decoration: InputDecoration(labelText: AppStrings.confirmPassword, prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(icon: Icon(_obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined), onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm)),
                         ),
                       ),
                       const SizedBox(height: 28),
-
-                      // ── Register button ──
-                      CustomButton(
-                        label: AppStrings.register,
-                        isLoading: _isLoading,
-                        useGradient: true,
-                        onPressed: _register,
-                      ),
+                      CustomButton(label: AppStrings.register, isLoading: _isLoading, useGradient: true, onPressed: _register),
                       const SizedBox(height: 20),
-
-                      // ── Login link ──
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            AppStrings.alreadyHaveAccount,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          GestureDetector(
-                            onTap: () => context.go('/login'),
-                            child: Text(
-                              AppStrings.login,
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Text(AppStrings.alreadyHaveAccount, style: Theme.of(context).textTheme.bodyMedium),
+                        GestureDetector(onTap: () => context.go('/login'), child: Text(AppStrings.login, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppColors.primary))),
+                      ]),
                       const SizedBox(height: 24),
                     ],
                   ),

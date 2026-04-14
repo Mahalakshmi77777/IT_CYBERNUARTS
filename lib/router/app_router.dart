@@ -10,9 +10,6 @@ import '../features/admin/screens/admin_events_screen.dart';
 import '../features/admin/screens/create_event_screen.dart';
 import '../features/admin/screens/edit_event_screen.dart';
 import '../features/admin/screens/event_detail_admin_screen.dart';
-import '../features/admin/screens/admin_clubs_screen.dart';
-import '../features/admin/screens/create_club_screen.dart';
-import '../features/admin/screens/club_detail_admin_screen.dart';
 import '../features/admin/screens/admin_profile_screen.dart';
 import '../features/user/screens/user_shell.dart';
 import '../features/user/screens/home_screen.dart';
@@ -28,7 +25,6 @@ final _userShellKey = GlobalKey<NavigatorState>();
 
 /// Main app router provider.
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
   final userRole = ref.watch(userRoleProvider);
 
   return GoRouter(
@@ -36,25 +32,18 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/splash',
     debugLogDiagnostics: true,
     redirect: (context, state) {
-      final authState = ref.watch(authStateProvider).value;
-      final hardcodedUser = ref.watch(hardcodedUserProvider);
-      final isLoggedIn = authState != null || hardcodedUser != null;
+      final isLoggedIn = ref.watch(isLoggedInProvider);
+      final userRole = ref.watch(userRoleProvider);
       
       final isSplash = state.matchedLocation == '/splash';
       final isLoginOrRegister = state.matchedLocation == '/login' || state.matchedLocation == '/register';
 
       if (isSplash) {
         if (!isLoggedIn) return '/login';
-        if (hardcodedUser != null) {
-          return hardcodedUser.isAdmin ? '/admin' : '/user/events';
-        }
         return userRole == 'admin' ? '/admin' : '/user/events';
       }
 
       if (isLoggedIn && isLoginOrRegister) {
-        if (hardcodedUser != null) {
-          return hardcodedUser.isAdmin ? '/admin' : '/user/events';
-        }
         return userRole == 'admin' ? '/admin' : '/user/events';
       }
 
@@ -105,26 +94,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'edit-event/:eventId',
                     builder: (_, state) => EditEventScreen(
                       eventId: state.pathParameters['eventId']!,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/admin/clubs',
-                builder: (_, __) => const AdminClubsScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'create',
-                    builder: (_, __) => const CreateClubScreen(),
-                  ),
-                  GoRoute(
-                    path: ':clubId',
-                    builder: (_, state) => ClubDetailAdminScreen(
-                      clubId: state.pathParameters['clubId']!,
                     ),
                   ),
                 ],

@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -117,18 +116,19 @@ class EventDetailAdminScreen extends ConsumerWidget {
 
                     // ── Registered users ──
                     Text(
-                      'Registered Users (${event.registeredUsers.length})',
+                      'Registered Users (${event.registeredCount})',
                       style: theme.textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
-                    if (event.registeredUsers.isEmpty)
+                    if (event.registeredCount == 0)
                       Text('No registrations yet',
                           style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant))
                     else
-                      ...event.registeredUsers
-                          .map((uid) => _registeredUserTile(uid)),
+                      Text('Log in to the Web Admin DB tool to view the live list of registered users.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant)),
                   ]),
                 ),
               ),
@@ -161,25 +161,8 @@ class EventDetailAdminScreen extends ConsumerWidget {
     );
   }
 
-  Widget _registeredUserTile(String uid) {
-    return FutureBuilder<DocumentSnapshot>(
-      future:
-          FirebaseFirestore.instance.collection('users').doc(uid).get(),
-      builder: (context, snap) {
-        if (!snap.hasData) return const SizedBox.shrink();
-        final data = snap.data!.data() as Map<String, dynamic>?;
-        if (data == null) return const SizedBox.shrink();
-        return ListTile(
-          dense: true,
-          leading: CircleAvatar(
-            child: Text((data['name'] as String? ?? 'U')[0].toUpperCase()),
-          ),
-          title: Text(data['name'] ?? 'Unknown'),
-          subtitle: Text(data['department'] ?? ''),
-        );
-      },
-    );
-  }
+  // The _registeredUserTile widget has been removed because the Neon DB schema querying
+  // for lists of users via widget iteration is an anti-pattern. Admin tools should view this in a dedicated table.
 
   void _confirmDelete(
       BuildContext context, WidgetRef ref, Event event) {
@@ -188,8 +171,8 @@ class EventDetailAdminScreen extends ConsumerWidget {
       builder: (_) => AlertDialog(
         title: const Text('Delete Event?'),
         content: Text(
-          event.registeredUsers.isNotEmpty
-              ? '⚠️ This event has ${event.registeredUsers.length} registered user(s). Deleting it will remove their registrations.'
+          event.registeredCount > 0
+              ? '⚠️ This event has ${event.registeredCount} registered user(s). Deleting it will remove their registrations.'
               : 'This action cannot be undone.',
         ),
         actions: [

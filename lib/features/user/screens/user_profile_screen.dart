@@ -125,15 +125,15 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                   _infoCard(Icons.business_outlined, 'Department',
                       user.department, theme),
                   _infoCard(Icons.event, 'Events Joined',
-                      '${user.joinedEvents.length}', theme),
+                      '${user.joinedEventsCount}', theme),
                   const SizedBox(height: 32),
 
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        ref.read(hardcodedUserProvider.notifier).setUser(null);
-                        ref.read(authRepositoryProvider).signOut();
+                      onPressed: () async {
+                        await ref.read(authRepositoryProvider).signOut();
+                        ref.invalidate(currentUserProvider);
                       },
                       icon:
                           const Icon(Icons.logout, color: AppColors.error),
@@ -182,7 +182,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                 label: 'Save',
                                 isLoading: _isSaving,
                                 useGradient: true,
-                                onPressed: () => _saveProfile(user.uid),
+                                onPressed: () => _saveProfile(user.id),
                               ),
                             ),
                           ],

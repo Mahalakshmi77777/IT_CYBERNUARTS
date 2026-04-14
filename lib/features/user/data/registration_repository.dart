@@ -1,63 +1,55 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../admin/data/event_repository.dart';
 
 /// Repository for event registration (join / leave).
 class RegistrationRepository {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final SupabaseClient _client = Supabase.instance.client;
 
-  /// Join an event — atomic batch write.
+  /// Join an event
   Future<void> joinEvent(String eventId, String userId) async {
-    final batch = _db.batch();
-    final eventRef = _db.collection('events').doc(eventId);
-    final userRef = _db.collection('users').doc(userId);
-    final regRef = _db.collection('registrations').doc('${eventId}_$userId');
-
-    // Add user to event's registeredUsers
-    batch.update(eventRef, {
-      'registeredUsers': FieldValue.arrayUnion([userId]),
-    });
-
-    // Add event to user's joinedEvents
-    batch.update(userRef, {
-      'joinedEvents': FieldValue.arrayUnion([eventId]),
-    });
-
-    // Create registration record
-    batch.set(regRef, {
-      'eventId': eventId,
-      'userId': userId,
-      'registeredAt': Timestamp.fromDate(DateTime.now()),
-    });
-
-    await batch.commit();
+    await _client.from('registrations').upsert(
+      {'event_id': eventId, 'user_id': userId},
+      onConflict: 'event_id,user_id',
+    );
   }
 
-  /// Leave an event — reverse of join.
+  /// Leave an event
   Future<void> leaveEvent(String eventId, String userId) async {
-    final batch = _db.batch();
-    final eventRef = _db.collection('events').doc(eventId);
-    final userRef = _db.collection('users').doc(userId);
-    final regRef = _db.collection('registrations').doc('${eventId}_$userId');
-
-    batch.update(eventRef, {
-      'registeredUsers': FieldValue.arrayRemove([userId]),
-    });
-
-    batch.update(userRef, {
-      'joinedEvents': FieldValue.arrayRemove([eventId]),
-    });
-
-    batch.delete(regRef);
-
-    await batch.commit();
+    await _client
+        .from('registrations')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('user_id', userId);
   }
 
-  /// Stream of events the user has registered for.
-  Stream<List<Event>> getUserRegistrations(String userId) {
-    return _db
-        .collection('events')
-        .where('registeredUsers', arrayContains: userId)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => Event.fromFirestore(d)).toList());
+  /// Fetch events the user has registered for.
+  Future<List<Event>> getUserRegistrations(String userId) async {
+    // Get registration records for this user
+    final regData = await _client
+        .from('registrations')
+        .select('event_id')
+        .eq('user_id', userId);
+
+    if ((regData as List).isEmpty) return [];
+
+    final eventIds = regData.map((r) => r['event_id'] as String).toList();
+
+    // Fetch those events
+    final eventsData = await _client
+        .from('events')
+        .select()
+        .inFilter('id', eventIds)
+        .order('start_date_time', ascending: true);
+
+    final events = <Event>[];
+    for (final row in eventsData as List) {
+      final countResult = await _client
+          .from('registrations')
+          .select()
+          .eq('event_id', row['id']);
+      row['registered_count'] = (countResult as List).length;
+      events.add(Event.fromJson(row));
+    }
+    return events;
   }
 }

@@ -91,6 +91,10 @@ class _EventDetailUserScreenState
     final theme = Theme.of(context);
     final userAsync = ref.watch(currentUserProvider);
 
+    final userId = userAsync.value?.id;
+    final regsAsync = userId != null ? ref.watch(userRegistrationsProvider(userId)) : null;
+    final isRegistered = regsAsync?.value?.any((e) => e.id == widget.eventId) ?? false;
+
     return FutureBuilder<Event>(
       future: ref.read(eventRepositoryProvider).getEvent(widget.eventId),
       builder: (context, snapshot) {
@@ -99,9 +103,6 @@ class _EventDetailUserScreenState
               body: Center(child: CircularProgressIndicator()));
         }
         final event = snapshot.data!;
-        final userId = userAsync.value?.uid;
-        final isRegistered =
-            userId != null && event.registeredUsers.contains(userId);
 
         return Scaffold(
           body: CustomScrollView(

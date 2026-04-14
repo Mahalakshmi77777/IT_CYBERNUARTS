@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Admin bottom navigation shell.
+/// Admin bottom navigation shell — Events + Profile only.
 class AdminShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -24,11 +24,6 @@ class AdminShell extends StatelessWidget {
             icon: Icon(Icons.event_outlined),
             selectedIcon: Icon(Icons.event),
             label: 'Events',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.groups_outlined),
-            selectedIcon: Icon(Icons.groups),
-            label: 'Clubs',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

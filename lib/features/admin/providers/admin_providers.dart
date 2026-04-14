@@ -1,21 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/event_repository.dart';
 import '../data/club_repository.dart';
-// mock_data import removed // MOCK DATA IMPORT
 
 /// Singleton event repository provider.
 final eventRepositoryProvider = Provider<EventRepository>((ref) {
   return EventRepository();
 });
 
-/// Stream of all events.
-final eventsStreamProvider = StreamProvider<List<Event>>((ref) {
+/// Future of all events. (Replaces StreamProvider)
+final eventsStreamProvider = FutureProvider<List<Event>>((ref) async {
   return ref.watch(eventRepositoryProvider).getEvents();
 });
 
-/// Stream of events for a specific club.
+/// Future of events for a specific club.
 final eventsByClubProvider =
-    StreamProvider.family<List<Event>, String>((ref, clubId) {
+    FutureProvider.family<List<Event>, String>((ref, clubId) async {
   return ref.watch(eventRepositoryProvider).getEventsByClub(clubId);
 });
 
@@ -24,7 +23,7 @@ final clubRepositoryProvider = Provider<ClubRepository>((ref) {
   return ClubRepository();
 });
 
-/// Stream of all clubs.
-final clubsStreamProvider = StreamProvider<List<Club>>((ref) {
+/// Future of all clubs.
+final clubsStreamProvider = FutureProvider<List<Club>>((ref) async {
   return ref.watch(clubRepositoryProvider).getClubs();
 });

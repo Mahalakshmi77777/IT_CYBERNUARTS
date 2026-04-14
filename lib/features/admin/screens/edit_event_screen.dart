@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -110,9 +109,9 @@ class _EditEventScreenState extends ConsumerState<EditEventScreen> {
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'venue': _venueController.text.trim(),
-        'startDateTime': Timestamp.fromDate(_startDateTime!),
-        'endDateTime': Timestamp.fromDate(_endDateTime!),
-        'registrationDeadline': Timestamp.fromDate(_deadline!),
+        'startDateTime': _startDateTime,
+        'endDateTime': _endDateTime,
+        'registrationDeadline': _deadline,
         'maxParticipants': int.parse(_maxParticipantsController.text.trim()),
         'bannerUrl': bannerUrl,
         'tag': _selectedTag,

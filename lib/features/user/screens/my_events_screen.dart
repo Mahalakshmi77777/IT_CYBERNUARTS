@@ -20,7 +20,7 @@ class MyEventsScreen extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (user) {
           if (user == null) return const SizedBox.shrink();
-          final regsAsync = ref.watch(userRegistrationsProvider(user.uid));
+          final regsAsync = ref.watch(userRegistrationsProvider(user.id));
 
           return regsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),

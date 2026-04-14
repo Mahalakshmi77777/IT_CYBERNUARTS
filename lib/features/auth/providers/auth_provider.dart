@@ -1,5 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/auth_repository.dart';
 
 /// Singleton auth repository provider.
@@ -7,30 +7,22 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
 });
 
-/// Stream of Firebase Auth state changes.
-final authStateProvider = StreamProvider<User?>((ref) {
-  return ref.watch(authRepositoryProvider).authStateChanges;
-});
-
-/// Hardcoded user state for bypasses
-class HardcodedUserNotifier extends Notifier<AppUser?> {
-  @override
-  AppUser? build() => null;
-  void setUser(AppUser? user) => state = user;
-}
-
-final hardcodedUserProvider = NotifierProvider<HardcodedUserNotifier, AppUser?>(HardcodedUserNotifier.new);
-
-/// Fetches the current user's Firestore profile.
+/// Fetches the current user's profile from public.users.
 final currentUserProvider = FutureProvider<AppUser?>((ref) async {
-  final hardcoded = ref.watch(hardcodedUserProvider);
-  if (hardcoded != null) return hardcoded;
-
   try {
     return await ref.read(authRepositoryProvider).getCurrentUserData();
   } catch (_) {
     return null;
   }
+});
+
+/// Auth state: is user logged in?
+/// Uses Supabase's currentUser — no manual session checks.
+final isLoggedInProvider = Provider<bool>((ref) {
+  // Also check the Supabase auth state directly
+  final supabaseUser = Supabase.instance.client.auth.currentUser;
+  final appUser = ref.watch(currentUserProvider).value;
+  return supabaseUser != null && appUser != null;
 });
 
 /// Derived provider returning the user's role ("admin" or "student").

@@ -8,7 +8,6 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../data/event_repository.dart';
-
 import '../providers/admin_providers.dart';
 
 class CreateEventScreen extends ConsumerStatefulWidget {
@@ -25,14 +24,13 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   final _venueController = TextEditingController();
   final _maxParticipantsController = TextEditingController();
 
-  String? _selectedClubId;
-  String? _selectedClubName;
   DateTime? _startDateTime;
   DateTime? _endDateTime;
   DateTime? _deadline;
   String _selectedTag = 'General';
   File? _bannerImage;
   bool _isLoading = false;
+  bool _isUploading = false; // Separate state for upload progress
 
   final _tags = ['Tech', 'Cultural', 'Sports', 'Workshop', 'General'];
 
@@ -47,7 +45,12 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      maxHeight: 800,
+      imageQuality: 80, // Compress to reduce upload size
+    );
     if (picked != null) {
       setState(() => _bannerImage = File(picked.path));
     }
@@ -86,11 +89,6 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedClubId == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Please select a club')));
-      return;
-    }
     if (_startDateTime == null || _endDateTime == null || _deadline == null) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please set all date/times')));
@@ -98,22 +96,46 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     }
 
     setState(() => _isLoading = true);
+
     try {
       final eventId = const Uuid().v4();
       String? bannerUrl;
 
+      // ── Upload banner to Supabase Storage ──
       if (_bannerImage != null) {
+        setState(() => _isUploading = true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                  SizedBox(width: 16),
+                  Text('Uploading banner image...'),
+                ],
+              ),
+              duration: Duration(seconds: 30),
+            ),
+          );
+        }
+
         bannerUrl = await ref
             .read(eventRepositoryProvider)
             .uploadBanner(eventId, _bannerImage!);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          setState(() => _isUploading = false);
+        }
       }
 
+      // ── Create the event record ──
       final event = Event(
         id: eventId,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        clubId: _selectedClubId!,
-        clubName: _selectedClubName!,
+        clubId: 'default',
+        clubName: 'Cyber Nauts',
         venue: _venueController.text.trim(),
         startDateTime: _startDateTime!,
         endDateTime: _endDateTime!,
@@ -124,14 +146,35 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       );
 
       await ref.read(eventRepositoryProvider).createEvent(event);
-      if (mounted) context.pop();
+
+      // Invalidate events cache so the list refreshes
+      ref.invalidate(eventsStreamProvider);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Event created successfully! 🎉'),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+        context.pop();
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() {
+        _isLoading = false;
+        _isUploading = false;
+      });
     }
   }
 
@@ -142,8 +185,6 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final clubsAsync = ref.watch(clubsStreamProvider);
-
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.createEvent)),
       body: SingleChildScrollView(
@@ -155,13 +196,11 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
             children: [
               // ── Banner picker ──
               GestureDetector(
-                onTap: _pickImage,
+                onTap: _isLoading ? null : _pickImage,
                 child: Container(
                   height: 180,
                   decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .surfaceContainerHighest,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16),
                     image: _bannerImage != null
                         ? DecorationImage(
@@ -179,7 +218,24 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                             Text('Add Banner Image'),
                           ],
                         )
-                      : null,
+                      : _isUploading
+                          ? Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircularProgressIndicator(color: Colors.white),
+                                    SizedBox(height: 12),
+                                    Text('Uploading...', style: TextStyle(color: Colors.white)),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : null,
                 ),
               ),
               const SizedBox(height: 20),
@@ -200,30 +256,6 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Description',
                   alignLabelWithHint: true,
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // ── Club dropdown ──
-              clubsAsync.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (e, _) => Text('Error loading clubs: $e'),
-                data: (clubs) => DropdownButtonFormField<String>(
-                  value: _selectedClubId,
-                  decoration: const InputDecoration(labelText: 'Club'),
-                  items: clubs
-                      .map((c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(c.name),
-                          ))
-                      .toList(),
-                  onChanged: (v) {
-                    final club = clubs.firstWhere((c) => c.id == v);
-                    setState(() {
-                      _selectedClubId = v;
-                      _selectedClubName = club.name;
-                    });
-                  },
                 ),
               ),
               const SizedBox(height: 14),
@@ -273,7 +305,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
 
               // ── Save ──
               CustomButton(
-                label: AppStrings.save,
+                label: _isUploading ? 'Uploading...' : AppStrings.save,
                 isLoading: _isLoading,
                 useGradient: true,
                 onPressed: _save,

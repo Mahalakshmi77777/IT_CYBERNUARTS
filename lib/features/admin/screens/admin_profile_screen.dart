@@ -60,9 +60,9 @@ class AdminProfileScreen extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      ref.read(hardcodedUserProvider.notifier).setUser(null);
-                      ref.read(authRepositoryProvider).signOut();
+                    onPressed: () async {
+                      await ref.read(authRepositoryProvider).signOut();
+                      ref.invalidate(currentUserProvider);
                     },
                     icon: const Icon(Icons.logout, color: AppColors.error),
                     label: const Text('Logout',
